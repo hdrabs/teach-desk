@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  students Student[]
+  lessons  Lesson[]
+  payments Payment[]
+}
+
+model Student {
+  id          String   @id @default(cuid())
+  name        String
+  phoneNumber String
+  email       String?
+  subject     String
+  hourlyRate  Decimal  @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tutorId String
+  tutor   User   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  lessons  Lesson[]
+  payments Payment[]
+
+  @@index([tutorId])
+}
+
+enum LessonStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MOBILE_PAYMENT
+}
+
+model Lesson {
+  id        String       @id @default(cuid())
+  date      DateTime
+  startTime String
+  duration  Int          // duration in minutes
+  subject   String
+  status    LessonStatus @default(SCHEDULED)
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  tutorId String
+  tutor   User   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  payments Payment[]
+
+  @@index([tutorId])
+  @@index([studentId])
+  @@index([date])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  paymentDate   DateTime
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  lessonId String?
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  tutorId String
+  tutor   User   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@index([studentId])
+}
